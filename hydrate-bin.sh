@@ -5,6 +5,7 @@ set -euo pipefail
 PKGBASE_SRC="godot-double"
 PKGBASE_BIN="godot-double-bin"
 PKGBASE_GH="godot-double-gh"
+CARCH=x86_64
 
 # Validate project structure
 for dir in "$PKGBASE_SRC" "$PKGBASE_BIN" "$PKGBASE_GH"; do
@@ -14,7 +15,7 @@ done
 # Build godot-double
 echo "==> Building $PKGBASE_SRC..."
 cd "$PKGBASE_SRC"
-makepkg -f --noconfirm
+#makepkg -f --noconfirm
 
 # Copy the built package to us
 PKGFILE=$(ls *.pkg.tar.zst | grep -v "mono" | tail -n1)
@@ -63,6 +64,7 @@ cat > "$PKGBASE_BIN/PKGBUILD" <<EOF
 pkgname=${pkgname}-bin
 pkgver=${pkgver}
 pkgrel=${pkgrel}
+pkgdesc='${pkgdesc}'
 arch=(${arch[@]})
 url="${url}"
 license=(${license[@]})
