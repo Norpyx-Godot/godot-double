@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+usage() {
+  cat <<'USAGE'
+Usage: gdops <command> [args]
+
+Commands:
+  status                 Show current pkgver/pkgrel and artifacts
+  bump <ver> <rel>        Update pkgver/pkgrel in godot-double/PKGBUILD
+  refresh                Run updpkgsums and regenerate godot-double/.SRCINFO
+  build                  Build godot-double with makepkg
+  hydrate                Generate godot-double-bin PKGBUILD/.SRCINFO
+  release                Create GitHub release with the built artifact
+  commit                 Commit PKGBUILD/.SRCINFO changes in submodules
+  push                   Push AUR repos for godot-double and godot-double-bin
+  all [--push] <ver> <rel>Run end-to-end release flow
+
+Config:
+  config.sh (committed defaults) and config.local.sh (ignored)
+USAGE
+}
+
+cmd="${1:-}"
+if [[ -z "$cmd" ]]; then
+  usage
+  exit 1
+fi
+shift || true
+
+case "$cmd" in
+  status)
+    "$ROOT_DIR/scripts/status.sh" "$@"
+    ;;
+  bump)
+    "$ROOT_DIR/scripts/bump.sh" "$@"
+    ;;
+  refresh)
+    "$ROOT_DIR/scripts/refresh.sh" "$@"
+    ;;
+  build)
+    "$ROOT_DIR/scripts/build.sh" "$@"
+    ;;
+  hydrate)
+    "$ROOT_DIR/scripts/hydrate-bin.sh" "$@"
+    ;;
+  release)
+    "$ROOT_DIR/scripts/release.sh" "$@"
+    ;;
+  commit)
+    "$ROOT_DIR/scripts/commit.sh" "$@"
+    ;;
+  push)
+    "$ROOT_DIR/scripts/push.sh" "$@"
+    ;;
+  all)
+    "$ROOT_DIR/scripts/all.sh" "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    printf 'Unknown command: %s\n\n' "$cmd" >&2
+    usage
+    exit 1
+    ;;
+esac

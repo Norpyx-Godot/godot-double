@@ -1,0 +1,3 @@
+config.local.sh
+dist/
+*.pkg.tar.zst

@@ -1,0 +1,6 @@
+[submodule "godot-double-bin"]
+	path = godot-double-bin
+	url = ssh://aur@aur.archlinux.org/godot-double-bin.git
+[submodule "godot-double"]
+	path = godot-double
+	url = ssh://aur@aur.archlinux.org/godot-double.git
