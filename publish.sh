@@ -9,6 +9,9 @@ PKGBASE_GH="godot-double-gh"
 # Validate project structure
 for dir in "$PKGBASE_SRC" "$PKGBASE_BIN" "$PKGBASE_GH"; do
 	[[ -d "$dir" ]] || { echo "Missing directory: $dir"; exit 1; }
+	pushd "$dir" > /dev/null
+	git clean -dxf
+	popd > /dev/null
 done
 
 # Copy the built package to us
