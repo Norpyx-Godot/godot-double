@@ -58,6 +58,13 @@ You can run the full pipeline in one go:
 ./bin/gdops all --push 4.5.1 0
 ```
 
+Dry-run any step with `--dry-run`:
+
+```bash
+./bin/gdops --dry-run hydrate
+./bin/gdops all --dry-run 4.5.1 0
+```
+
 ## Notes
 
 - `hydrate` expects a built `*.pkg.tar.zst` in `godot-double/` and copies it into

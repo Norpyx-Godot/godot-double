@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
   cat <<'USAGE'
-Usage: gdops <command> [args]
+Usage: gdops [--dry-run] <command> [args]
 
 Commands:
   status                 Show current pkgver/pkgrel and artifacts
@@ -16,12 +17,17 @@ Commands:
   release                Create GitHub release with the built artifact
   commit                 Commit PKGBUILD/.SRCINFO changes in submodules
   push                   Push AUR repos for godot-double and godot-double-bin
-  all [--push] <ver> <rel>Run end-to-end release flow
+  all [--push] [--dry-run] <ver> <rel>Run end-to-end release flow
 
 Config:
   config.sh (committed defaults) and config.local.sh (ignored)
 USAGE
 }
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+  export DRY_RUN=1
+  shift
+fi
 
 cmd="${1:-}"
 if [[ -z "$cmd" ]]; then

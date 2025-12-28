@@ -5,6 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1090
 source "$SCRIPT_DIR/lib.sh"
 
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=1
+  shift
+fi
+
 usage() {
   cat <<'USAGE'
 Usage: gdops bump <pkgver> <pkgrel>
@@ -33,6 +38,6 @@ if ! grep -q '^pkgrel=' "$pkgbuild"; then
 fi
 
 log "Updating pkgver to $pkgver_new"
-sed -i "s/^pkgver=.*/pkgver=${pkgver_new}/" "$pkgbuild"
+run_cmd sed -i "s/^pkgver=.*/pkgver=${pkgver_new}/" "$pkgbuild"
 log "Updating pkgrel to $pkgrel_new"
-sed -i "s/^pkgrel=.*/pkgrel=${pkgrel_new}/" "$pkgbuild"
+run_cmd sed -i "s/^pkgrel=.*/pkgrel=${pkgrel_new}/" "$pkgbuild"

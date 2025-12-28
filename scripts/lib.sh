@@ -23,6 +23,7 @@ GH_REPO="${GH_REPO:-}"
 RELEASE_PREFIX="${RELEASE_PREFIX:-v}"
 AUR_REMOTE="${AUR_REMOTE:-origin}"
 MAKEPKG_ARGS="${MAKEPKG_ARGS:--si}"
+DRY_RUN="${DRY_RUN:-0}"
 
 log() {
   printf '==> %s\n' "$*"
@@ -31,6 +32,25 @@ log() {
 die() {
   printf 'error: %s\n' "$*" >&2
   exit 1
+}
+
+run_cmd() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    printf '[dry-run] '
+    printf '%q ' "$@"
+    printf '\n'
+    return 0
+  fi
+  "$@"
+}
+
+run_cmd_str() {
+  local cmd="$*"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    printf '[dry-run] %s\n' "$cmd"
+    return 0
+  fi
+  bash -c "$cmd"
 }
 
 require_cmd() {
