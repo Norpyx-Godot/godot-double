@@ -10,8 +10,8 @@ Usage: gdops [--dry-run] <command> [args]
 
 Commands:
   status                 Show current pkgver/pkgrel and artifacts
-  bump <ver> <rel>        Update pkgver/pkgrel in godot-double/PKGBUILD
-  refresh                Run updpkgsums and regenerate godot-double/.SRCINFO
+  bump <ver> <rel>       Update pkgver/pkgrel in godot-double/PKGBUILD
+  pull                   Download latest tar, run updpkgsums and regenerate godot-double/.SRCINFO
   build                  Build godot-double with makepkg
   hydrate                Generate godot-double-bin PKGBUILD/.SRCINFO
   release                Create GitHub release with the built artifact
@@ -43,8 +43,8 @@ case "$cmd" in
   bump)
     "$ROOT_DIR/scripts/bump.sh" "$@"
     ;;
-  refresh)
-    "$ROOT_DIR/scripts/refresh.sh" "$@"
+  pull)
+    "$ROOT_DIR/scripts/pull.sh" "$@"
     ;;
   build)
     "$ROOT_DIR/scripts/build.sh" "$@"
