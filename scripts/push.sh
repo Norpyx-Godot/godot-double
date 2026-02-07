@@ -19,6 +19,8 @@ push_repo() {
   log "Pushing $repo_dir to $AUR_REMOTE"
   (
     cd "$repo_dir"
+    run_cmd git update-ref refs/heads/master HEAD
+    run_cmd git checkout master
     run_cmd git push "$AUR_REMOTE"
   )
 }

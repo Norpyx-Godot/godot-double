@@ -32,7 +32,7 @@ in `config.sh`:
 2. Update `godot-double/PKGBUILD`:
    ```bash
    ./bin/gdops bump 4.5.1 0
-   ./bin/gdops refresh
+   ./bin/gdops pull
    ```
 3. Build the source package:
    ```bash
