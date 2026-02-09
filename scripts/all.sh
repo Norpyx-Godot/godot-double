@@ -31,7 +31,7 @@ pkgver="$1"
 pkgrel="$2"
 
 "$SCRIPT_DIR/bump.sh" "$pkgver" "$pkgrel"
-"$SCRIPT_DIR/refresh.sh"
+"$SCRIPT_DIR/pull.sh"
 "$SCRIPT_DIR/build.sh"
 "$SCRIPT_DIR/hydrate-bin.sh"
 "$SCRIPT_DIR/release.sh"
