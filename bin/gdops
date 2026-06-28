@@ -10,14 +10,32 @@ Usage: gdops [--dry-run] <command> [args]
 
 Commands:
   status                 Show current pkgver/pkgrel and artifacts
+  arch-latest            Show latest Arch godot/godot-mono package version
+  update [latest]        Dockerized test-plus-stage update (default: latest)
+  update <ver> <rel>     Dockerized test-plus-stage update for an explicit version
+  preflight [ver rel]    Check repos, metadata files, config, and required tools
   bump <ver> <rel>       Update pkgver/pkgrel in godot-double/PKGBUILD
+  bump-check <ver> <rel> Verify godot-double/PKGBUILD contains a bump
   pull                   Download latest tar, run updpkgsums and regenerate godot-double/.SRCINFO
+  source-check           Refresh checksums and verify godot-double/.SRCINFO
   build                  Build godot-double with makepkg
+  artifact-check         Verify the build produced the expected package artifact
   hydrate                Generate godot-double-bin PKGBUILD/.SRCINFO
+  hydrate-check          Hydrate godot-double-bin and verify generated metadata
+  metadata-check <repo>  Verify .SRCINFO matches PKGBUILD for source or bin
+  test                   Run lightweight automation tests
+  stage <ver> <rel>      Stage update artifacts without publishing
+  stage latest           Stage latest Arch godot/godot-mono package version
+  validate <ver> <rel>   Run the local bump validation pipeline
+  validate latest        Validate latest Arch godot/godot-mono package version
+  ci <ver> <rel>         Run tests and validation as one CI gate
+  ci latest              Run CI for latest Arch godot/godot-mono package version
+  docker <command>       Build/run the Dockerized validation environment
   release                Create GitHub release with the built artifact
   commit                 Commit PKGBUILD/.SRCINFO changes in submodules
   push                   Push AUR repos for godot-double and godot-double-bin
-  all [--push] [--dry-run] <ver> <rel>Run end-to-end release flow
+  all [--push] [--dry-run] <ver> <rel>
+                         Run end-to-end release flow
 
 Config:
   config.sh (committed defaults) and config.local.sh (ignored)
@@ -40,17 +58,56 @@ case "$cmd" in
   status)
     "$ROOT_DIR/scripts/status.sh" "$@"
     ;;
+  arch-latest)
+    "$ROOT_DIR/scripts/arch-latest.sh" "$@"
+    ;;
+  update)
+    "$ROOT_DIR/scripts/update.sh" "$@"
+    ;;
+  preflight)
+    "$ROOT_DIR/scripts/preflight.sh" "$@"
+    ;;
   bump)
     "$ROOT_DIR/scripts/bump.sh" "$@"
+    ;;
+  bump-check)
+    "$ROOT_DIR/scripts/bump-check.sh" "$@"
     ;;
   pull)
     "$ROOT_DIR/scripts/pull.sh" "$@"
     ;;
+  source-check)
+    "$ROOT_DIR/scripts/source-check.sh" "$@"
+    ;;
   build)
     "$ROOT_DIR/scripts/build.sh" "$@"
     ;;
+  artifact-check)
+    "$ROOT_DIR/scripts/artifact-check.sh" "$@"
+    ;;
   hydrate)
     "$ROOT_DIR/scripts/hydrate-bin.sh" "$@"
+    ;;
+  hydrate-check)
+    "$ROOT_DIR/scripts/hydrate-check.sh" "$@"
+    ;;
+  metadata-check)
+    "$ROOT_DIR/scripts/metadata-check.sh" "$@"
+    ;;
+  test)
+    "$ROOT_DIR/scripts/test.sh" "$@"
+    ;;
+  stage)
+    "$ROOT_DIR/scripts/stage.sh" "$@"
+    ;;
+  validate)
+    "$ROOT_DIR/scripts/validate.sh" "$@"
+    ;;
+  ci)
+    "$ROOT_DIR/scripts/ci.sh" "$@"
+    ;;
+  docker)
+    "$ROOT_DIR/scripts/docker.sh" "$@"
     ;;
   release)
     "$ROOT_DIR/scripts/release.sh" "$@"

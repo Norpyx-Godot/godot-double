@@ -1,3 +1,4 @@
 config.local.sh
 dist/
+coverage/
 *.pkg.tar.zst
