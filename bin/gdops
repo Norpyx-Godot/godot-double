@@ -11,6 +11,7 @@ Usage: gdops [--dry-run] <command> [args]
 Commands:
   status                 Show current pkgver/pkgrel and artifacts
   arch-latest            Show latest Arch godot/godot-mono package version
+  check-update           Compare local packages with official Arch godot version
   update [latest]        Dockerized test-plus-stage update (default: latest)
   update <ver> <rel>     Dockerized test-plus-stage update for an explicit version
   sync-arch-pkgbuild     Fetch official Arch godot PKGBUILD and transform it
@@ -32,6 +33,8 @@ Commands:
   ci <ver> <rel>         Run tests and validation as one CI gate
   ci latest              Run CI for latest Arch godot/godot-mono package version
   docker <command>       Build/run the Dockerized validation environment
+  idle-update            Run idle-gated update check and Dockerized update
+  install-idle-timer     Install a systemd user timer for idle update checks
   release                Create GitHub release with the built artifact
   commit                 Commit PKGBUILD/.SRCINFO changes in submodules
   push                   Push AUR repos for godot-double and godot-double-bin
@@ -61,6 +64,9 @@ case "$cmd" in
     ;;
   arch-latest)
     "$ROOT_DIR/scripts/arch-latest.sh" "$@"
+    ;;
+  check-update)
+    "$ROOT_DIR/scripts/check-update.sh" "$@"
     ;;
   update)
     "$ROOT_DIR/scripts/update.sh" "$@"
@@ -112,6 +118,12 @@ case "$cmd" in
     ;;
   docker)
     "$ROOT_DIR/scripts/docker.sh" "$@"
+    ;;
+  idle-update)
+    "$ROOT_DIR/scripts/idle-update.sh" "$@"
+    ;;
+  install-idle-timer)
+    "$ROOT_DIR/scripts/install-idle-timer.sh" "$@"
     ;;
   release)
     "$ROOT_DIR/scripts/release.sh" "$@"

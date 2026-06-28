@@ -26,7 +26,8 @@ in `config.sh`:
 - `GH_REPO`: GitHub repo used for releases (owner/repo).
 - `RELEASE_PREFIX`: tag prefix (default `v`).
 - `AUR_REMOTE`: remote name for pushing AUR updates.
-- `MAKEPKG_ARGS`: arguments passed to `makepkg` when building.
+- `MAKEPKG_ARGS`: arguments passed to `makepkg` when building (default:
+  `-sf --noconfirm` for CI-safe dependency installation and idempotent reruns).
 
 ## Typical Release Flow
 
@@ -129,6 +130,58 @@ Dry-run validation:
 ./bin/gdops --dry-run docker validate latest
 ```
 
+## Scheduled Idle Checks
+
+To check whether Arch has published a newer Godot package without staging
+anything:
+
+```bash
+./bin/gdops check-update
+```
+
+The command compares local `godot-double/PKGBUILD` and
+`godot-double-bin/PKGBUILD` against the official Arch `godot` and `godot-mono`
+package versions from `pacman -Si`.
+
+To install a user-level systemd timer that checks periodically and only runs the
+expensive Docker update after the desktop has been idle for two hours:
+
+```bash
+./bin/gdops install-idle-timer
+```
+
+The timer invokes:
+
+```bash
+./bin/gdops idle-update
+```
+
+When an update is needed, `idle-update` runs the same Dockerized
+`./bin/gdops update` flow, writes logs under `dist/idle-update-logs/`, and sends
+a persistent desktop notification when artifacts are ready to release.
+
+Useful idle-check overrides:
+
+- `GDOPS_IDLE_SECONDS`: idle threshold in seconds (default `7200`).
+- `GDOPS_IDLE_IGNORE=1`: skip idle detection for a manual run.
+- `GDOPS_IDLE_TIMER_INTERVAL`: systemd timer interval (default `30min`).
+- `GDOPS_UPDATE_LOG_DIR`: update log directory.
+
+Optional host tools improve the scheduler experience:
+
+- `xprintidle`: preferred desktop idle detector.
+- `notify-send`: persistent desktop notifications.
+- `systemd --user`: timer installation and scheduling.
+
+The scheduled update does not publish anything. After the notification, review
+the result and run:
+
+```bash
+./bin/gdops release
+./bin/gdops commit
+./bin/gdops push
+```
+
 The official Arch package source is the baseline. Arch currently publishes
 `godot` and `godot-mono` from the same `godot` split-package PKGBUILD, so the
 sync step fetches that official package source and transforms it locally.
@@ -152,6 +205,11 @@ staging stages used by `stage`:
 After `update` or `docker stage`, the source package artifacts are built under
 `godot-double/`, copied to `dist/`, and `godot-double-bin/PKGBUILD` plus
 `.SRCINFO` are regenerated.
+
+The build step is resumable. If both expected source artifacts already exist in
+`godot-double/`, `gdops build` skips `makepkg` and lets the pipeline continue to
+artifact validation and binary package hydration. Set `GDOPS_FORCE_BUILD=1` to
+rebuild anyway.
 
 Expected package outputs:
 
@@ -178,6 +236,19 @@ Useful Docker overrides:
 
 - `GDOPS_DOCKER_IMAGE`: image tag to build/run.
 - `GDOPS_DOCKER_NO_BUILD=1`: skip image build when CI builds it separately.
+- `GDOPS_SCONS_JOBS`: limit SCons build parallelism inside the container when
+  Docker Desktop or CI memory is constrained.
+
+The Dockerized update/build does not require Godot build dependencies on the
+host. If dependency resolution fails inside the container, rebuild the image:
+
+```bash
+./bin/gdops docker build
+```
+
+The transformed source PKGBUILD disables makepkg LTO with `options=(!lto)`.
+Godot's final editor link can otherwise be killed by the kernel OOM killer in
+memory-constrained containers.
 
 ## Notes
 
@@ -187,6 +258,8 @@ Useful Docker overrides:
 - `release` uses the `gh` CLI and requires auth to `GH_REPO`.
 - `publish` is split into explicit steps; nothing auto-pushes unless you call
   `push` or `all --push`.
+- `update` does not need SSH credentials. SSH is only needed for host-side AUR
+  pushes, or if release/push is moved into the container later.
 - Submodule URLs are relative; update `.gitmodules` if you clone this elsewhere.
 
 ## Canonical Commands

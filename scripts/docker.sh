@@ -43,6 +43,8 @@ docker_build() {
 
 docker_run() {
   local interactive=()
+  local docker_env=()
+  local passthrough_var
   if [[ "${1:-}" == "--interactive" ]]; then
     interactive=(--interactive)
     shift
@@ -56,9 +58,18 @@ docker_run() {
     run_cmd mkdir -p "$DIST_DIR"
   fi
 
+  docker_env=(
+    -e "LOCAL_UID=$(id -u)"
+    -e "LOCAL_GID=$(id -g)"
+  )
+  for passthrough_var in GDOPS_SCONS_JOBS MAKEPKG_ARGS; do
+    if [[ -n "${!passthrough_var+x}" ]]; then
+      docker_env+=(-e "$passthrough_var=${!passthrough_var}")
+    fi
+  done
+
   run_cmd docker run --rm "${interactive[@]}" \
-    -e "LOCAL_UID=$(id -u)" \
-    -e "LOCAL_GID=$(id -g)" \
+    "${docker_env[@]}" \
     -v "$ROOT_DIR:/workspace" \
     -w /workspace \
     "$IMAGE" "$@"

@@ -10,6 +10,7 @@ SUMMARY_FILE="$COVERAGE_DIR/summary.txt"
 
 COVERAGE_FILES=(
   scripts/arch-latest.sh
+  scripts/check-update.sh
   scripts/update.sh
   scripts/sync-arch-pkgbuild.sh
   scripts/preflight.sh
@@ -18,9 +19,12 @@ COVERAGE_FILES=(
   scripts/stage.sh
   scripts/validate.sh
   scripts/docker.sh
+  scripts/idle-update.sh
+  scripts/install-idle-timer.sh
   scripts/ci.sh
   scripts/test.sh
   scripts/source-check.sh
+  scripts/build.sh
   scripts/artifact-check.sh
   scripts/hydrate-check.sh
 )

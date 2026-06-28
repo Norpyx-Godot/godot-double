@@ -64,6 +64,14 @@ write_transformed_pkgbuild() {
     }
   ' "$source_pkgbuild" > "$tmp_pkgbuild"
 
+  if grep -Eq '^options=.*!lto' "$tmp_pkgbuild"; then
+    :
+  elif grep -Eq '^options=' "$tmp_pkgbuild"; then
+    sed -i '/^options=/a options+=(!lto)' "$tmp_pkgbuild"
+  else
+    sed -i '/^arch=/a options=(!lto)' "$tmp_pkgbuild"
+  fi
+
   cat >> "$tmp_pkgbuild" <<'PKGBUILD_PREPARE'
 
 prepare() {
@@ -106,6 +114,7 @@ PKGBUILD_PREPARE
   ' "$source_pkgbuild" |
     sed \
       -e 's/cd \$pkgname/cd godot/g' \
+      -e 's/-j$(nproc --all)/-j"${GDOPS_SCONS_JOBS:-$(nproc --all)}"/' \
       -e 's/bin\/godot\.linuxbsd\.editor\.\$_CARCH\.mono/bin\/godot.linuxbsd.editor.double.$_CARCH.mono/g' \
       -e 's/--godot-platform=linuxbsd$/--godot-platform=linuxbsd --precision=double/' \
       -e '/pulseaudio=yes/a\    precision=double' \
