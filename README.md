@@ -58,7 +58,7 @@ Dry-run any step with `--dry-run`:
 ./bin/gdops all --dry-run 4.5.1 0
 ```
 
-## Bump Validation Pipeline
+## Update Pipeline
 
 The maintainer-facing update command runs the Dockerized test-plus-stage flow.
 It does not publish GitHub releases, commit changes, or push AUR repositories.
@@ -129,11 +129,18 @@ Dry-run validation:
 ./bin/gdops --dry-run docker validate latest
 ```
 
+The official Arch package source is the baseline. Arch currently publishes
+`godot` and `godot-mono` from the same `godot` split-package PKGBUILD, so the
+sync step fetches that official package source and transforms it locally.
+
 The `ci` command runs the coverage-backed automation tests first, then the same
 staging stages used by `stage`:
 
 - `arch-latest`: when using `latest`, resolves the official Arch `godot` and
   `godot-mono` package version through `pacman` and requires them to match.
+- `sync-arch-pkgbuild`: fetches the official Arch `godot` package source with
+  `pkgctl`, then transforms its split PKGBUILD into `godot-double` and
+  `godot-double-mono`.
 - `preflight`: checks submodules, metadata files, config, tools, and version
   input shape.
 - `bump`: updates `godot-double/PKGBUILD`.
@@ -142,8 +149,17 @@ staging stages used by `stage`:
 - `artifact-check`: verifies the expected package artifact exists.
 - `hydrate-check`: generates and verifies `godot-double-bin` metadata.
 
-After `docker stage`, the package artifact is built under `godot-double/`, copied
-to `dist/`, and `godot-double-bin/PKGBUILD` plus `.SRCINFO` are regenerated.
+After `update` or `docker stage`, the source package artifacts are built under
+`godot-double/`, copied to `dist/`, and `godot-double-bin/PKGBUILD` plus
+`.SRCINFO` are regenerated.
+
+Expected package outputs:
+
+- `godot-double`
+- `godot-double-mono`
+- `godot-double-bin`
+- `godot-double-mono-bin`
+
 Release creation and AUR pushes are intentionally separate because they require
 external credentials and publish irreversible state.
 
@@ -165,8 +181,9 @@ Useful Docker overrides:
 
 ## Notes
 
-- `hydrate` expects a built `*.pkg.tar.zst` in `godot-double/` and copies it into
-  `dist/` before generating `godot-double-bin/PKGBUILD`.
+- `hydrate` expects built `godot-double` and `godot-double-mono` package
+  artifacts in `godot-double/`, copies them into `dist/`, and generates the
+  split `godot-double-bin` / `godot-double-mono-bin` PKGBUILD.
 - `release` uses the `gh` CLI and requires auth to `GH_REPO`.
 - `publish` is split into explicit steps; nothing auto-pushes unless you call
   `push` or `all --push`.

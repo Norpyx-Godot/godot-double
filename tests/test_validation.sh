@@ -211,9 +211,70 @@ SRCINFO
 fi
 
 printf 'fixture artifact\n' > godot-double-1.2.3-4-x86_64.pkg.tar.zst
+printf 'fixture mono artifact\n' > godot-double-mono-1.2.3-4-x86_64.pkg.tar.zst
 EOF
 
   chmod +x "$stub_dir/updpkgsums" "$stub_dir/makepkg"
+  printf '%s\n' "$stub_dir"
+}
+
+make_pkgctl_stub_dir() {
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  TMP_DIRS+=("$stub_dir")
+
+  cat > "$stub_dir/pkgctl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" != "repo" || "${2:-}" != "clone" || "${3:-}" != "--protocol=https" || "${4:-}" != "godot" ]]; then
+  printf 'unexpected pkgctl args: %s\n' "$*" >&2
+  exit 1
+fi
+
+mkdir -p godot
+cat > godot/PKGBUILD <<'PKGBUILD'
+pkgbase=godot
+pkgname=(godot godot-mono)
+pkgver=1.2.3
+pkgrel=4
+pkgdesc='Advanced cross-platform 2D and 3D game engine'
+url='https://godotengine.org/'
+license=(MIT)
+arch=(x86_64)
+makedepends=(scons setconf)
+depends=(freetype2 libglvnd)
+optdepends=('pipewire-alsa: for audio support')
+source=("git+https://github.com/godotengine/godot#tag=$pkgver-stable")
+b2sums=('SKIP')
+
+prepare() {
+  cd $pkgname
+}
+
+case $CARCH in
+  x86_64*) _CARCH=x86_64;;
+esac
+
+build() {
+  cd $pkgname
+  _args=(
+    pulseaudio=yes
+  )
+  scons "${_args[@]}"
+  _args+=(module_mono_enabled=yes mono_glue=no)
+  scons "${_args[@]}"
+  bin/godot.linuxbsd.editor.$_CARCH.mono --headless --generate-mono-glue modules/mono/glue
+  modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin --godot-platform=linuxbsd
+}
+
+package_godot() {
+  cd $pkgbase
+}
+PKGBUILD
+EOF
+
+  chmod +x "$stub_dir/pkgctl"
   printf '%s\n' "$stub_dir"
 }
 
@@ -270,10 +331,12 @@ test_metadata_check_supports_binary_repo() {
 }
 
 test_artifact_check_passes_for_expected_artifact() {
-  local fixture artifact
+  local fixture artifact mono_artifact
   fixture="$(make_fixture)"
   artifact="$fixture/godot-double/godot-double-1.2.3-4-x86_64.pkg.tar.zst"
+  mono_artifact="$fixture/godot-double/godot-double-mono-1.2.3-4-x86_64.pkg.tar.zst"
   printf 'fixture artifact\n' > "$artifact"
+  printf 'fixture mono artifact\n' > "$mono_artifact"
 
   assert_success gdops_fixture "$fixture" artifact-check
 }
@@ -307,7 +370,7 @@ test_stage_usage_and_argument_errors() {
   fixture="$(make_fixture)"
 
   assert_success gdops_fixture "$fixture" --help
-  for cmd in arch-latest update preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker; do
+  for cmd in arch-latest update sync-arch-pkgbuild preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker; do
     assert_success gdops_fixture "$fixture" "$cmd" --help
   done
 
@@ -339,12 +402,40 @@ test_stage_dry_run_accepts_new_version() {
   assert_success gdops_fixture "$fixture" --dry-run stage 2.0.0 1
 }
 
-test_stage_passes_with_stubbed_package_tools() {
-  local fixture stub_dir
+test_sync_arch_pkgbuild_dry_run() {
+  local fixture
   fixture="$(make_fixture)"
-  stub_dir="$(make_package_tool_stub_dir)"
 
-  PATH="$stub_dir:$PATH" assert_success gdops_fixture "$fixture" stage 1.2.3 4
+  assert_success gdops_fixture "$fixture" --dry-run sync-arch-pkgbuild
+}
+
+test_sync_arch_pkgbuild_transforms_official_pkgbuild() {
+  local fixture stub_dir transformed
+  fixture="$(make_fixture)"
+  stub_dir="$(make_pkgctl_stub_dir)"
+
+  PATH="$stub_dir:$PATH" ARCH_SRC_DIR="$fixture/arch-src" assert_success gdops_fixture "$fixture" sync-arch-pkgbuild
+
+  transformed="$fixture/godot-double/PKGBUILD"
+  grep -q '^pkgbase=godot-double$' "$transformed" || fail "pkgbase was not transformed"
+  grep -q '^pkgname=(godot-double godot-double-mono)$' "$transformed" || fail "pkgname was not transformed"
+  grep -q 'precision=double' "$transformed" || fail "double precision flag was not added"
+  grep -q 'package_godot-double()' "$transformed" || fail "godot-double package function missing"
+  grep -q 'package_godot-double-mono()' "$transformed" || fail "godot-double-mono package function missing"
+}
+
+test_stage_passes_with_stubbed_package_tools() {
+  local fixture pkg_stub_dir pkgctl_stub_dir
+  fixture="$(make_fixture)"
+  pkg_stub_dir="$(make_package_tool_stub_dir)"
+  pkgctl_stub_dir="$(make_pkgctl_stub_dir)"
+
+  PATH="$pkg_stub_dir:$pkgctl_stub_dir:$PATH" ARCH_SRC_DIR="$fixture/arch-src" assert_success gdops_fixture "$fixture" stage 1.2.3 4
+
+  grep -q '^pkgname=(godot-double-bin godot-double-mono-bin)$' "$fixture/godot-double-bin/PKGBUILD" ||
+    fail "binary split package names were not generated"
+  grep -q '^package_godot-double-mono-bin()' "$fixture/godot-double-bin/PKGBUILD" ||
+    fail "godot-double-mono-bin package function was not generated"
 }
 
 test_ci_dry_run_accepts_new_version() {
@@ -441,6 +532,8 @@ test_arch_latest_rejects_invalid_arch_version
 test_stage_usage_and_argument_errors
 test_validate_dry_run_accepts_new_version
 test_stage_dry_run_accepts_new_version
+test_sync_arch_pkgbuild_dry_run
+test_sync_arch_pkgbuild_transforms_official_pkgbuild
 test_stage_passes_with_stubbed_package_tools
 test_ci_dry_run_accepts_new_version
 test_ci_dry_run_accepts_latest

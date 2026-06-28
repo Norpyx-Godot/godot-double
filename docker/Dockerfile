@@ -4,6 +4,7 @@ RUN pacman -Syu --noconfirm --needed \
     base-devel \
     bash \
     coreutils \
+    devtools \
     diffutils \
     findutils \
     git \
@@ -16,7 +17,7 @@ RUN pacman -Syu --noconfirm --needed \
     sudo \
     tar \
     zstd \
-  && pacman -Scc --noconfirm
+  && rm -f /var/cache/pacman/pkg/*.pkg.tar.*
 
 COPY docker/entrypoint.sh /usr/local/bin/gdops-container-entrypoint
 

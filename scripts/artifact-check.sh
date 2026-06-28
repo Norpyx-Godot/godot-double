@@ -35,10 +35,14 @@ load_pkgbuild
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   log "Dry run: would verify $SRC_DIR/${PKGBASE}-${pkgver}-${pkgrel}-*.pkg.tar.zst"
+  log "Dry run: would verify $SRC_DIR/${PKGBASE}-mono-${pkgver}-${pkgrel}-*.pkg.tar.zst"
   exit 0
 fi
 
-pkgfile="$(find_pkgfile)"
+pkgfile="$(find_pkgfile_for "$PKGBASE")"
+mono_pkgfile="$(find_pkgfile_for "${PKGBASE}-mono")"
 [[ -s "$pkgfile" ]] || die "package artifact is empty: $pkgfile"
+[[ -s "$mono_pkgfile" ]] || die "package artifact is empty: $mono_pkgfile"
 
 log "Artifact check passed: $pkgfile"
+log "Artifact check passed: $mono_pkgfile"

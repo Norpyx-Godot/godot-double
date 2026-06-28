@@ -15,14 +15,18 @@ require_dirs
 load_pkgbuild
 release_tag=$(release_tag)
 
-pkgfile=$(find_pkgfile)
+pkgfile=$(find_pkgfile_for "$PKGBASE")
+mono_pkgfile=$(find_pkgfile_for "${PKGBASE}-mono")
 
 printf 'pkgver=%s\n' "$pkgver"
 printf 'pkgrel=%s\n' "$pkgrel"
 printf 'release_tag=%s\n' "$release_tag"
 printf 'source_artifact=%s\n' "$pkgfile"
+printf 'source_mono_artifact=%s\n' "$mono_pkgfile"
 
 if ls -1 "$DIST_DIR"/*.pkg.tar.zst >/dev/null 2>&1; then
-  dist_file=$(find_dist_pkgfile)
+  dist_file=$(find_dist_pkgfile_for "$PKGBASE")
   printf 'release_artifact=%s\n' "$dist_file"
+  dist_mono_file=$(find_dist_pkgfile_for "${PKGBASE}-mono")
+  printf 'release_mono_artifact=%s\n' "$dist_mono_file"
 fi

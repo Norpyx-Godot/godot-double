@@ -13,6 +13,7 @@ Commands:
   arch-latest            Show latest Arch godot/godot-mono package version
   update [latest]        Dockerized test-plus-stage update (default: latest)
   update <ver> <rel>     Dockerized test-plus-stage update for an explicit version
+  sync-arch-pkgbuild     Fetch official Arch godot PKGBUILD and transform it
   preflight [ver rel]    Check repos, metadata files, config, and required tools
   bump <ver> <rel>       Update pkgver/pkgrel in godot-double/PKGBUILD
   bump-check <ver> <rel> Verify godot-double/PKGBUILD contains a bump
@@ -63,6 +64,9 @@ case "$cmd" in
     ;;
   update)
     "$ROOT_DIR/scripts/update.sh" "$@"
+    ;;
+  sync-arch-pkgbuild)
+    "$ROOT_DIR/scripts/sync-arch-pkgbuild.sh" "$@"
     ;;
   preflight)
     "$ROOT_DIR/scripts/preflight.sh" "$@"

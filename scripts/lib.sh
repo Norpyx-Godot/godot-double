@@ -19,6 +19,7 @@ PKGBASE_BIN="${PKGBASE_BIN:-godot-double-bin}"
 SRC_DIR="${SRC_DIR:-$ROOT_DIR/$PKGBASE}"
 BIN_DIR="${BIN_DIR:-$ROOT_DIR/$PKGBASE_BIN}"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist}"
+ARCH_SRC_DIR="${ARCH_SRC_DIR:-$DIST_DIR/arch-packages}"
 GH_REPO="${GH_REPO:-}"
 RELEASE_PREFIX="${RELEASE_PREFIX:-v}"
 AUR_REMOTE="${AUR_REMOTE:-origin}"
@@ -170,23 +171,33 @@ release_tag() {
 }
 
 find_pkgfile() {
+  find_pkgfile_for "$PKGBASE"
+}
+
+find_pkgfile_for() {
+  local package_name="$1"
   local pkgfile
   if [[ -n "${pkgver-}" && -n "${pkgrel-}" ]]; then
-    pkgfile=$(ls -1 "$SRC_DIR/${PKGBASE}-${pkgver}-${pkgrel}-"*.pkg.tar.zst 2>/dev/null | grep -v 'mono' | sort | tail -n1 || true)
+    pkgfile=$(ls -1 "$SRC_DIR/${package_name}-${pkgver}-${pkgrel}-"*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
   else
-    pkgfile=$(ls -1 "$SRC_DIR"/*.pkg.tar.zst 2>/dev/null | grep -v 'mono' | sort | tail -n1 || true)
+    pkgfile=$(ls -1 "$SRC_DIR/${package_name}-"*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
   fi
-  [[ -n "$pkgfile" ]] || die "no package artifact found in $SRC_DIR"
+  [[ -n "$pkgfile" ]] || die "no package artifact found for $package_name in $SRC_DIR"
   printf '%s' "$pkgfile"
 }
 
 find_dist_pkgfile() {
+  find_dist_pkgfile_for "$PKGBASE"
+}
+
+find_dist_pkgfile_for() {
+  local package_name="$1"
   local pkgfile
   if [[ -n "${pkgver-}" && -n "${pkgrel-}" ]]; then
-    pkgfile=$(ls -1 "$DIST_DIR/${PKGBASE}-${pkgver}-${pkgrel}-"*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
+    pkgfile=$(ls -1 "$DIST_DIR/${package_name}-${pkgver}-${pkgrel}-"*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
   else
-    pkgfile=$(ls -1 "$DIST_DIR"/*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
+    pkgfile=$(ls -1 "$DIST_DIR/${package_name}-"*.pkg.tar.zst 2>/dev/null | sort | tail -n1 || true)
   fi
-  [[ -n "$pkgfile" ]] || die "no release artifact found in $DIST_DIR"
+  [[ -n "$pkgfile" ]] || die "no release artifact found for $package_name in $DIST_DIR"
   printf '%s' "$pkgfile"
 }

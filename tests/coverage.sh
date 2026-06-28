@@ -11,6 +11,7 @@ SUMMARY_FILE="$COVERAGE_DIR/summary.txt"
 COVERAGE_FILES=(
   scripts/arch-latest.sh
   scripts/update.sh
+  scripts/sync-arch-pkgbuild.sh
   scripts/preflight.sh
   scripts/bump-check.sh
   scripts/metadata-check.sh

@@ -53,6 +53,7 @@ export GDOPS_EXPECTED_PKGVER="$pkgver_new"
 export GDOPS_EXPECTED_PKGREL="$pkgrel_new"
 
 log "Starting staging for $pkgver_new-$pkgrel_new"
+"$SCRIPT_DIR/sync-arch-pkgbuild.sh" "${stage_args[@]}"
 "$SCRIPT_DIR/preflight.sh" "${stage_args[@]}" "$pkgver_new" "$pkgrel_new"
 "$SCRIPT_DIR/bump.sh" "${stage_args[@]}" "$pkgver_new" "$pkgrel_new"
 "$SCRIPT_DIR/bump-check.sh" "${stage_args[@]}" "$pkgver_new" "$pkgrel_new"
