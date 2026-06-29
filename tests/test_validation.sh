@@ -173,6 +173,27 @@ EOF
   printf '%s\n' "$stub_dir"
 }
 
+make_gh_release_stub_dir() {
+  local view_status="$1"
+  local log_file="$2"
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  TMP_DIRS+=("$stub_dir")
+
+  cat > "$stub_dir/gh" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "\$*" >> "$log_file"
+if [[ "\${1:-}" == "release" && "\${2:-}" == "view" ]]; then
+  exit $view_status
+fi
+exit 0
+EOF
+
+  chmod +x "$stub_dir/gh"
+  printf '%s\n' "$stub_dir"
+}
+
 make_xprintidle_stub_dir() {
   local idle_ms="$1"
   local stub_dir
@@ -434,6 +455,42 @@ test_build_rebuilds_when_only_one_artifact_exists() {
     fail "build did not rebuild partial artifact set"$'\n'"$output"
 }
 
+write_dist_artifacts() {
+  local fixture="$1"
+  printf 'fixture artifact\n' > "$fixture/dist/godot-double-1.2.3-4-x86_64.pkg.tar.zst"
+  printf 'fixture mono artifact\n' > "$fixture/dist/godot-double-mono-1.2.3-4-x86_64.pkg.tar.zst"
+}
+
+test_release_creates_new_release_with_both_assets() {
+  local fixture log_file stub_dir
+  fixture="$(make_fixture)"
+  write_dist_artifacts "$fixture"
+  log_file="$fixture/gh.log"
+  stub_dir="$(make_gh_release_stub_dir 1 "$log_file")"
+
+  PATH="$stub_dir:$PATH" assert_success gdops_fixture "$fixture" release
+
+  grep -q 'release view v1.2.3-4 --repo Norpyx-Godot/godot-double' "$log_file" ||
+    fail "release did not check for existing release"
+  grep -q 'release create v1.2.3-4 .*/godot-double-1.2.3-4-x86_64.pkg.tar.zst .*/godot-double-mono-1.2.3-4-x86_64.pkg.tar.zst --repo Norpyx-Godot/godot-double --title v1.2.3-4 --notes ' "$log_file" ||
+    fail "release create did not include both assets"
+}
+
+test_release_repairs_existing_release_with_both_assets() {
+  local fixture log_file stub_dir
+  fixture="$(make_fixture)"
+  write_dist_artifacts "$fixture"
+  log_file="$fixture/gh.log"
+  stub_dir="$(make_gh_release_stub_dir 0 "$log_file")"
+
+  PATH="$stub_dir:$PATH" assert_success gdops_fixture "$fixture" release
+
+  grep -q 'release upload v1.2.3-4 .*/godot-double-1.2.3-4-x86_64.pkg.tar.zst .*/godot-double-mono-1.2.3-4_x86_64.pkg.tar.zst' "$log_file" &&
+    fail "matched invalid underscore artifact path"
+  grep -q 'release upload v1.2.3-4 .*/godot-double-1.2.3-4-x86_64.pkg.tar.zst .*/godot-double-mono-1.2.3-4-x86_64.pkg.tar.zst --repo Norpyx-Godot/godot-double --clobber' "$log_file" ||
+    fail "release upload did not include both assets with clobber"
+}
+
 test_arch_latest_reports_aligned_versions() {
   local fixture stub_dir
   fixture="$(make_fixture)"
@@ -579,7 +636,7 @@ test_stage_usage_and_argument_errors() {
   fixture="$(make_fixture)"
 
   assert_success gdops_fixture "$fixture" --help
-  for cmd in arch-latest check-update update sync-arch-pkgbuild preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker idle-update install-idle-timer; do
+  for cmd in arch-latest check-update update sync-arch-pkgbuild preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker idle-update install-idle-timer release; do
     assert_success gdops_fixture "$fixture" "$cmd" --help
   done
 
@@ -598,6 +655,7 @@ test_stage_usage_and_argument_errors() {
   assert_failure gdops_fixture "$fixture" docker unknown
   assert_failure gdops_fixture "$fixture" idle-update extra
   assert_failure gdops_fixture "$fixture" install-idle-timer extra
+  assert_failure gdops_fixture "$fixture" release extra
 }
 
 test_validate_dry_run_accepts_new_version() {
@@ -755,6 +813,8 @@ test_build_dry_run_uses_noninteractive_makepkg_args
 test_build_skips_when_expected_artifacts_exist
 test_build_skips_hyphenated_mono_artifact_without_unbound_variable
 test_build_rebuilds_when_only_one_artifact_exists
+test_release_creates_new_release_with_both_assets
+test_release_repairs_existing_release_with_both_assets
 test_arch_latest_reports_aligned_versions
 test_arch_latest_rejects_mismatched_versions
 test_arch_latest_rejects_invalid_arch_version

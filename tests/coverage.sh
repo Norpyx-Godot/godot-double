@@ -27,6 +27,7 @@ COVERAGE_FILES=(
   scripts/build.sh
   scripts/artifact-check.sh
   scripts/hydrate-check.sh
+  scripts/release.sh
 )
 
 count_code_lines() {

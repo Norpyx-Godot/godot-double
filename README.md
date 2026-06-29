@@ -255,7 +255,9 @@ memory-constrained containers.
 - `hydrate` expects built `godot-double` and `godot-double-mono` package
   artifacts in `godot-double/`, copies them into `dist/`, and generates the
   split `godot-double-bin` / `godot-double-mono-bin` PKGBUILD.
-- `release` uses the `gh` CLI and requires auth to `GH_REPO`.
+- `release` uses the `gh` CLI and requires auth to `GH_REPO`. It publishes both
+  `godot-double` and `godot-double-mono` assets, and can repair an existing
+  release by uploading both artifacts with `--clobber`.
 - `publish` is split into explicit steps; nothing auto-pushes unless you call
   `push` or `all --push`.
 - `update` does not need SSH credentials. SSH is only needed for host-side AUR
