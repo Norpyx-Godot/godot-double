@@ -143,6 +143,10 @@ The command compares local `godot-double/PKGBUILD` and
 `godot-double-bin/PKGBUILD` against the official Arch `godot` and `godot-mono`
 package versions from `pacman -Si`.
 
+For scripts, `./bin/gdops check-update --exit-code` behaves like a predicate:
+exit `0` means an update is needed, exit `1` means the packages are current, and
+exit `2` means the check failed.
+
 To install a user-level systemd timer that checks periodically and only runs the
 expensive Docker update after the desktop has been idle for two hours:
 

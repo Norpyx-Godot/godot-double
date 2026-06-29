@@ -144,11 +144,11 @@ printf '%s\n' "$check_output"
 
 case "$check_status" in
   0)
+    log "update needed; running Dockerized update flow"
+    ;;
+  1)
     log "local packages match official Arch package version"
     exit 0
-    ;;
-  10)
-    log "update needed; running Dockerized update flow"
     ;;
   *)
     notify_desktop critical "godot-double update check failed" "$check_output"

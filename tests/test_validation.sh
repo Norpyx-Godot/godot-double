@@ -527,7 +527,21 @@ test_check_update_reports_current_package_versions() {
   grep -q '^reason=current$' <<<"$output" || fail "check-update did not report current reason"
 }
 
-test_check_update_exit_code_reports_needed_update() {
+test_check_update_exit_code_reports_current_as_false() {
+  local fixture stub_dir output status
+  fixture="$(make_fixture)"
+  stub_dir="$(make_pacman_stub_dir 1.2.3-4 1.2.3-4)"
+
+  set +e
+  output="$(PATH="$stub_dir:$PATH" gdops_fixture "$fixture" check-update --exit-code 2>&1)"
+  status=$?
+  set -e
+
+  [[ "$status" -eq 1 ]] || fail "expected check-update exit 1 for current packages, got $status"$'\n'"$output"
+  grep -q '^update_needed=0$' <<<"$output" || fail "check-update did not report current package versions"
+}
+
+test_check_update_exit_code_reports_needed_update_as_true() {
   local fixture stub_dir output status
   fixture="$(make_fixture)"
   stub_dir="$(make_pacman_stub_dir 2.0.0-1 2.0.0-1)"
@@ -537,10 +551,22 @@ test_check_update_exit_code_reports_needed_update() {
   status=$?
   set -e
 
-  [[ "$status" -eq 10 ]] || fail "expected check-update exit 10, got $status"$'\n'"$output"
+  [[ "$status" -eq 0 ]] || fail "expected check-update exit 0 for needed update, got $status"$'\n'"$output"
   grep -q '^update_needed=1$' <<<"$output" || fail "check-update did not report needed update"
   grep -q '^reason=source_version_mismatch,bin_version_mismatch$' <<<"$output" ||
     fail "check-update did not report source/bin drift"
+}
+
+test_check_update_exit_code_reports_errors_as_two() {
+  local fixture output status
+  fixture="$(make_fixture)"
+
+  set +e
+  output="$(gdops_fixture "$fixture" check-update --exit-code extra 2>&1)"
+  status=$?
+  set -e
+
+  [[ "$status" -eq 2 ]] || fail "expected check-update exit 2 for usage error, got $status"$'\n'"$output"
 }
 
 test_check_update_detects_binary_repo_drift() {
@@ -819,7 +845,9 @@ test_arch_latest_reports_aligned_versions
 test_arch_latest_rejects_mismatched_versions
 test_arch_latest_rejects_invalid_arch_version
 test_check_update_reports_current_package_versions
-test_check_update_exit_code_reports_needed_update
+test_check_update_exit_code_reports_current_as_false
+test_check_update_exit_code_reports_needed_update_as_true
+test_check_update_exit_code_reports_errors_as_two
 test_check_update_detects_binary_repo_drift
 test_idle_update_skips_when_machine_is_active
 test_idle_update_dry_run_handles_needed_update

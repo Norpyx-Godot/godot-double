@@ -15,8 +15,14 @@ Compares local godot-double and godot-double-bin package versions against the
 official Arch godot/godot-mono package version.
 
 Options:
-  --exit-code   Exit 10 when an update is needed, 0 when current.
+  --exit-code   Predicate mode: exit 0 when update is needed, 1 when current,
+                and 2 for check errors.
 USAGE
+}
+
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 2
 }
 
 while [[ $# -gt 0 ]]; do
@@ -31,7 +37,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       usage
-      exit 1
+      exit 2
       ;;
   esac
 done
@@ -104,6 +110,9 @@ printf 'bin_pkgrel=%s\n' "$bin_pkgrel"
 printf 'update_needed=%s\n' "$update_needed"
 printf 'reason=%s\n' "$reason"
 
-if [[ "$EXIT_CODE_MODE" -eq 1 && "$update_needed" -eq 1 ]]; then
-  exit 10
+if [[ "$EXIT_CODE_MODE" -eq 1 ]]; then
+  if [[ "$update_needed" -eq 1 ]]; then
+    exit 0
+  fi
+  exit 1
 fi
