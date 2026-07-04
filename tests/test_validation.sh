@@ -194,6 +194,22 @@ EOF
   printf '%s\n' "$stub_dir"
 }
 
+make_ssh_stub_dir() {
+  local log_file="$1"
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  TMP_DIRS+=("$stub_dir")
+
+  cat > "$stub_dir/ssh" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "\$*" >> "$log_file"
+EOF
+
+  chmod +x "$stub_dir/ssh"
+  printf '%s\n' "$stub_dir"
+}
+
 make_xprintidle_stub_dir() {
   local idle_ms="$1"
   local stub_dir
@@ -491,6 +507,33 @@ test_release_repairs_existing_release_with_both_assets() {
     fail "release upload did not include both assets with clobber"
 }
 
+test_aur_keywords_dry_run_lists_package_bases() {
+  local fixture output
+  fixture="$(make_fixture)"
+
+  output="$(gdops_fixture "$fixture" --dry-run aur-keywords 2>&1)" ||
+    fail "expected aur-keywords dry-run success"$'\n'"$output"
+
+  grep -q 'set-keywords godot-double .*godot .*double-precision .*large-worlds .*csharp' <<<"$output" ||
+    fail "aur-keywords dry-run did not include source keywords"$'\n'"$output"
+  grep -q 'set-keywords godot-double-bin .*binary .*prebuilt' <<<"$output" ||
+    fail "aur-keywords dry-run did not include binary keywords"$'\n'"$output"
+}
+
+test_aur_keywords_uses_ssh_set_keywords() {
+  local fixture log_file stub_dir
+  fixture="$(make_fixture)"
+  log_file="$fixture/ssh.log"
+  stub_dir="$(make_ssh_stub_dir "$log_file")"
+
+  PATH="$stub_dir:$PATH" assert_success gdops_fixture "$fixture" aur-keywords
+
+  grep -q '^aur@aur.archlinux.org set-keywords godot-double .*double-precision .*dotnet .*csharp' "$log_file" ||
+    fail "aur-keywords did not set source package keywords"
+  grep -q '^aur@aur.archlinux.org set-keywords godot-double-bin .*binary .*prebuilt' "$log_file" ||
+    fail "aur-keywords did not set binary package keywords"
+}
+
 test_arch_latest_reports_aligned_versions() {
   local fixture stub_dir
   fixture="$(make_fixture)"
@@ -662,7 +705,7 @@ test_stage_usage_and_argument_errors() {
   fixture="$(make_fixture)"
 
   assert_success gdops_fixture "$fixture" --help
-  for cmd in arch-latest check-update update sync-arch-pkgbuild preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker idle-update install-idle-timer release; do
+  for cmd in arch-latest check-update update sync-arch-pkgbuild preflight bump-check metadata-check stage validate source-check artifact-check hydrate-check test ci docker aur-keywords idle-update install-idle-timer release; do
     assert_success gdops_fixture "$fixture" "$cmd" --help
   done
 
@@ -679,6 +722,7 @@ test_stage_usage_and_argument_errors() {
   assert_failure gdops_fixture "$fixture" docker test extra
   assert_failure gdops_fixture "$fixture" docker shell extra
   assert_failure gdops_fixture "$fixture" docker unknown
+  assert_failure gdops_fixture "$fixture" aur-keywords extra
   assert_failure gdops_fixture "$fixture" idle-update extra
   assert_failure gdops_fixture "$fixture" install-idle-timer extra
   assert_failure gdops_fixture "$fixture" release extra
@@ -841,6 +885,8 @@ test_build_skips_hyphenated_mono_artifact_without_unbound_variable
 test_build_rebuilds_when_only_one_artifact_exists
 test_release_creates_new_release_with_both_assets
 test_release_repairs_existing_release_with_both_assets
+test_aur_keywords_dry_run_lists_package_bases
+test_aur_keywords_uses_ssh_set_keywords
 test_arch_latest_reports_aligned_versions
 test_arch_latest_rejects_mismatched_versions
 test_arch_latest_rejects_invalid_arch_version

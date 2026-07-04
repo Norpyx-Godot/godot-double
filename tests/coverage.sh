@@ -19,6 +19,7 @@ COVERAGE_FILES=(
   scripts/stage.sh
   scripts/validate.sh
   scripts/docker.sh
+  scripts/aur-keywords.sh
   scripts/idle-update.sh
   scripts/install-idle-timer.sh
   scripts/ci.sh

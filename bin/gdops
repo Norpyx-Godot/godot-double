@@ -33,6 +33,7 @@ Commands:
   ci <ver> <rel>         Run tests and validation as one CI gate
   ci latest              Run CI for latest Arch godot/godot-mono package version
   docker <command>       Build/run the Dockerized validation environment
+  aur-keywords           Apply configured AUR package-base keywords
   idle-update            Run idle-gated update check and Dockerized update
   install-idle-timer     Install a systemd user timer for idle update checks
   release                Create GitHub release with the built artifact
@@ -118,6 +119,9 @@ case "$cmd" in
     ;;
   docker)
     "$ROOT_DIR/scripts/docker.sh" "$@"
+    ;;
+  aur-keywords)
+    "$ROOT_DIR/scripts/aur-keywords.sh" "$@"
     ;;
   idle-update)
     "$ROOT_DIR/scripts/idle-update.sh" "$@"

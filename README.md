@@ -186,6 +186,25 @@ the result and run:
 ./bin/gdops push
 ```
 
+## AUR Keywords
+
+AUR keywords are package-base metadata managed by aurweb, not PKGBUILD metadata.
+`makepkg --printsrcinfo` does not emit a `keywords=()` PKGBUILD variable, so
+this repo keeps the keyword lists in `config.sh` and applies them through the
+AUR SSH command.
+
+Review the configured keywords:
+
+```bash
+./bin/gdops --dry-run aur-keywords
+```
+
+Apply them to `godot-double` and `godot-double-bin`:
+
+```bash
+./bin/gdops aur-keywords
+```
+
 The official Arch package source is the baseline. Arch currently publishes
 `godot` and `godot-mono` from the same `godot` split-package PKGBUILD, so the
 sync step fetches that official package source and transforms it locally.
