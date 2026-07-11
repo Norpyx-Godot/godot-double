@@ -259,8 +259,18 @@ Useful Docker overrides:
 
 - `GDOPS_DOCKER_IMAGE`: image tag to build/run.
 - `GDOPS_DOCKER_NO_BUILD=1`: skip image build when CI builds it separately.
+- `GDOPS_DOCKER_AUTO_START=0`: fail instead of trying to start Docker when the
+  daemon is unavailable.
+- `GDOPS_DOCKER_START_CMD`: custom command used to start Docker for nonstandard
+  host setups.
+- `GDOPS_DOCKER_START_TIMEOUT`: seconds to wait for Docker to become ready
+  after startup (default `120`).
 - `GDOPS_SCONS_JOBS`: limit SCons build parallelism inside the container when
   Docker Desktop or CI memory is constrained.
+
+The Docker wrapper checks `docker info` before build/run. If the Docker CLI is
+present but the daemon is unavailable, it attempts to start Docker Desktop via
+the user systemd service, then waits for the daemon to become ready.
 
 The Dockerized update/build does not require Godot build dependencies on the
 host. If dependency resolution fails inside the container, rebuild the image:

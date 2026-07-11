@@ -210,6 +210,61 @@ EOF
   printf '%s\n' "$stub_dir"
 }
 
+make_docker_desktop_autostart_stub_dir() {
+  local log_file="$1"
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  TMP_DIRS+=("$stub_dir")
+
+  cat > "$stub_dir/docker" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'docker %s\n' "\$*" >> "$log_file"
+if [[ "\${1:-}" == "info" ]]; then
+  [[ -f "$stub_dir/docker-ready" ]]
+  exit \$?
+fi
+exit 0
+EOF
+
+  cat > "$stub_dir/systemctl" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'systemctl %s\n' "\$*" >> "$log_file"
+if [[ "\${1:-}" == "--user" && "\${2:-}" == "list-unit-files" && "\${3:-}" == "docker-desktop.service" ]]; then
+  exit 0
+fi
+if [[ "\${1:-}" == "--user" && "\${2:-}" == "start" && "\${3:-}" == "docker-desktop.service" ]]; then
+  touch "$stub_dir/docker-ready"
+  exit 0
+fi
+exit 1
+EOF
+
+  chmod +x "$stub_dir/docker" "$stub_dir/systemctl"
+  printf '%s\n' "$stub_dir"
+}
+
+make_docker_down_stub_dir() {
+  local log_file="$1"
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  TMP_DIRS+=("$stub_dir")
+
+  cat > "$stub_dir/docker" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'docker %s\n' "\$*" >> "$log_file"
+if [[ "\${1:-}" == "info" ]]; then
+  exit 1
+fi
+exit 0
+EOF
+
+  chmod +x "$stub_dir/docker"
+  printf '%s\n' "$stub_dir"
+}
+
 make_xprintidle_stub_dir() {
   local idle_ms="$1"
   local stub_dir
@@ -849,6 +904,36 @@ test_docker_commands_support_stubbed_docker() {
   PATH="$stub_dir:$PATH" GDOPS_DOCKER_NO_BUILD=1 assert_success gdops_fixture "$fixture" docker shell
 }
 
+test_docker_build_starts_docker_desktop_when_daemon_is_down() {
+  local fixture log_file stub_dir
+  fixture="$(make_fixture)"
+  log_file="$fixture/docker.log"
+  stub_dir="$(make_docker_desktop_autostart_stub_dir "$log_file")"
+
+  PATH="$stub_dir:$PATH" GDOPS_DOCKER_START_TIMEOUT=5 GDOPS_DOCKER_START_INTERVAL=0 \
+    assert_success gdops_fixture "$fixture" docker build
+
+  grep -q '^docker info$' "$log_file" || fail "docker readiness was not checked"
+  grep -q '^systemctl --user start docker-desktop.service$' "$log_file" ||
+    fail "Docker Desktop user service was not started"
+  grep -q '^docker build ' "$log_file" || fail "docker build did not run after auto-start"
+}
+
+test_docker_build_can_disable_auto_start() {
+  local fixture log_file stub_dir
+  fixture="$(make_fixture)"
+  log_file="$fixture/docker.log"
+  stub_dir="$(make_docker_down_stub_dir "$log_file")"
+
+  PATH="$stub_dir:$PATH" GDOPS_DOCKER_AUTO_START=0 \
+    assert_failure gdops_fixture "$fixture" docker build
+
+  grep -q '^docker info$' "$log_file" || fail "docker readiness was not checked"
+  if grep -q '^docker build ' "$log_file"; then
+    fail "docker build ran even though Docker was unavailable"
+  fi
+}
+
 test_docker_ci_dry_run_does_not_require_docker() {
   local fixture
   fixture="$(make_fixture)"
@@ -917,6 +1002,8 @@ test_docker_validate_dry_run_does_not_require_docker
 test_docker_build_test_and_shell_dry_run_do_not_require_docker
 test_docker_dry_run_passes_scons_job_limit
 test_docker_commands_support_stubbed_docker
+test_docker_build_starts_docker_desktop_when_daemon_is_down
+test_docker_build_can_disable_auto_start
 test_docker_ci_dry_run_does_not_require_docker
 test_update_dry_run_defaults_to_latest
 test_update_dry_run_accepts_latest_and_explicit_version
